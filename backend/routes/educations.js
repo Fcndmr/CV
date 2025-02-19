@@ -1,31 +1,37 @@
 const express = require("express");
-const Experience = require("../models/Experience");
+const Education = require("../models/Education");
 const router = express.Router();
 
-// Create (POST)
+//Create (POST)
 router.post("/", async (req, res) => {
     try {
-        let { name, company, description, startDate, endDate } = req.body;
+        let { university, program, department, gpa, startDate, endDate} = req.body;
 
-        if (!name || !company || !description || !startDate || !endDate) {
-            return res.status(400).json({ error: "Tüm alanları doldurun." });
+        if (!university || !program || !department || !gpa || !startDate || !endDate) {
+            return res.status(400).json({ error: "Tüm alanları doldurun."});
         }
 
-        name = name.trim();
-        company = company.trim();
-        description = description.trim();
+        university = university.trim();
+        program = program.trim();
+        department = department.trim();
         startDate = startDate.trim();
         endDate = endDate.trim();
+
+        if (typeof gpa !== "number" || gpa < 0 || gpa > 4) {
+            return res.status(400).json({ error: "GPA 0 ile 4 arasında olmalıdır." });
+        }
 
         const dateRegex = /^(0[1-9]|1[0-2])\/\d{4}$/;
         if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
             return res.status(400).json({ error: "Tarih formatı MM/YYYY olmalıdır." });
         }
 
-        const newExperience = new Experience({ name, company, description, startDate, endDate });
-        await newExperience.save();
+        const newEducation = new Education({
+            university, program, department, gpa, startDate, endDate
+        });
+        await newEducation.save();
 
-        res.status(201).json(newExperience);
+        res.status(201).json(newEducation);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `Bir hata oluştu: ${error.message}` });
@@ -35,8 +41,8 @@ router.post("/", async (req, res) => {
 // Get All (GET)
 router.get("/", async (req, res) => {
     try {
-        const experiences = await Experience.find();
-        res.status(200).json(experiences);
+        const educations = await Education.find();
+        res.status(200).json(educations);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `Bir hata oluştu: ${error.message}` });
@@ -46,11 +52,11 @@ router.get("/", async (req, res) => {
 // Get By ID (GET)
 router.get("/:id", async (req, res) => {
     try {
-        const experience = await Experience.findById(req.params.id);
-        if (!experience) {
-            return res.status(404).json({ error: "Deneyim bulunamadı." });
+        const education = await Education.findById(req.params.id);
+        if (!education) {
+            return res.status(404).json({ error: "Eğitim bulunamadı." });
         }
-        res.status(200).json(experience);
+        res.status(200).json(education)
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `Bir hata oluştu: ${error.message}` });
@@ -70,17 +76,27 @@ router.put("/:id", async (req, res) => {
             return res.status(400).json({ error: "endDate formatı MM/YYYY olmalıdır." });
         }
 
-        const updatedExperience = await Experience.findByIdAndUpdate(
+        if (updateFields.gpa !== undefined) {
+            const gpaValue = Number(updateFields.gpa);
+
+            if (isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4) {
+                return res.status(400).json({ error: "GPA 0 ile 4 arasında bir sayı olmalıdır." });
+            }
+
+            updateFields.gpa = gpaValue; 
+        }
+
+        const updatedEducation = await Education.findByIdAndUpdate(
             req.params.id,
             { $set: req.body },
             { new: true, runValidators: true }
         );
 
-        if (!updatedExperience) {
-            return res.status(404).json({ error: "Deneyim bulunamadı." });
+        if (!updatedEducation) {
+            return res.status(404).json({ error: "Eğitim bulunamadı." });
         }
 
-        res.status(200).json(updatedExperience);
+        res.status(200).json(updatedEducation);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `Bir hata oluştu: ${error.message}` });
@@ -90,11 +106,11 @@ router.put("/:id", async (req, res) => {
 // Delete (DELETE)
 router.delete("/:id", async (req, res) => {
     try {
-        const deletedExperience = await Experience.findByIdAndDelete(req.params.id);
-        if (!deletedExperience) {
-            return res.status(404).json({ error: "Deneyim bulunamadı." });
+        const deletedEducation = await Education.findByIdAndDelete(req.params.id);
+        if (!deletedEducation) {
+            return res.status(404).json({ error: "Eğitim bulunamadı." });
         }
-        res.status(200).json({ message: "Deneyim başarıyla silindi." });
+        res.status(200).json({ message: "Eğitim başarıyla silindi." });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `Bir hata oluştu: ${error.message}` });
